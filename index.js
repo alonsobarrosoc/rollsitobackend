@@ -1,7 +1,8 @@
 const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
-const bodyParser = require('body-parser')
+const bodyParser = require('body-parser');
+
 
 // const usuario = require('./Routes/')
 
@@ -23,13 +24,9 @@ app.get("/api/test", (req, res) => {
   res.json({ message: "Funciona" });
 });
 
-// app.use("/baco/usuario", require("./Routes/usuarios"));
-// app.use("/baco/operador", require("./Routes/operadores"));
-// app.use("/baco/caja", require("./Routes/cajas"));
-// app.use("/baco/camion", require("./Routes/camiones"));
-// app.use("/baco/caseta", require("./Routes/casetas"));
 app.use("/api/usuario", require("./Routes/usuario"))
 app.use("/api/articulo",require("./Routes/articulo"))
+
 
 
 
