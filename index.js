@@ -26,6 +26,9 @@ app.get("/api/test", (req, res) => {
 
 app.use("/api/usuario", require("./Routes/usuario"))
 app.use("/api/articulo",require("./Routes/articulo"))
+app.use("/api/cliente",require("./Routes/cliente"))
+app.use("/api/pedido",require("./Routes/pedido"))
+app.use("/api/pidio",require("./Routes/pidio"))
 
 
 
