@@ -13,7 +13,7 @@ create table Articulo(
     Foto mediumblob
 );
 create table Pedido(
-	NumPedido mediumint,
+	NumPedido mediumint primary key auto_increment not null,
     Tel varchar(200),
     Estado varchar(100),
     Total double,
@@ -21,8 +21,7 @@ create table Pedido(
     HoraAceptado time,
     HoraPreparado time,
     HoraLlegada time,
-    foreign key (Tel) references Cliente(Tel),
-    primary key (NumPedidio)
+    foreign key (Tel) references Cliente(Tel)
 );
 
 create table Extra(
@@ -41,14 +40,13 @@ create table PuedeTenerExtra(
 create table PidioExtra(
 	idPE mediumint primary key auto_increment not null,
     Cant int,
-    idE mediumint references Extra(idE)
+    idE mediumint references Extra(idE),
+    idPidio mediumint references Pidio(idPidio)
 );
 create table Pidio(
-	idPidio mediumint,
+	idPidio mediumint primary key auto_increment not null,
 	idArt mediumint references Articulo(idArt),
-    NumPedido mediumint references Pedido(NumPedido),
-    idPE mediumint references PidioExtra(idPE),
-    primary key (idPidio)  
+    NumPedido mediumint references Pedido(NumPedido)
 );
 create table Usuario(
 	username varchar(500) primary key,

@@ -5,7 +5,7 @@ const salt_rounds = 10;
 
 exports.nuevoUsuario = (req, res) => {
   let us = req.body;
-  let roll = "NULL";
+  let roll = 'NULL';
   if (typeof us.roll !== "undefined") {
     roll = us.roll;
   }
@@ -44,15 +44,19 @@ exports.login = (req, res) => {
           res.status(500).send({ error: "Ocurrio un error" });
         }
         if (response) {
-          bcrypt.compare(us.pass, response[0].pass).then(function (result) {
-            if (result) {
-              var token = jwt.sign(response[0], process.env.KEY);
-              // console.log(token);
-              res.status(200).json({ token });
-            } else {
-              res.status(403).send({ error: "Prohibido" });
-            }
-          });
+          if (typeof response[0] !== "undefined") {
+            bcrypt.compare(us.pass, response[0].pass).then(function (result) {
+              if (result) {
+                var token = jwt.sign(response[0], process.env.KEY);
+                // console.log(token);
+                res.status(200).json({ token });
+              } else {
+                res.status(403).send({ error: "Prohibido" });
+              }
+            });
+          } else {
+            res.status(403).send({ error: "Prohibido" });
+          }
         }
       });
   } catch (err) {
@@ -101,6 +105,44 @@ exports.cambiarPassword = (req, res) => {
     res.status(500).send({ error: "Ocurrio un error" });
   }
 };
+
+exports.isAuthenticated = (req, res) => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader) {
+    const token = authHeader.split(" ")[1];
+
+    jwt.verify(token, process.env.KEY, (err, user) => {
+      if (err) {
+        return res.sendStatus(403);
+      }
+        res.status(200).send({authorization: 'ok'})
+      
+    });
+  } else {
+    res.sendStatus(401);
+  }
+}
+exports.isAuthenticatedAdmin = (req, res) => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader) {
+    const token = authHeader.split(" ")[1];
+
+    jwt.verify(token, process.env.KEY, (err, user) => {
+      if (err) {
+        return res.sendStatus(403);
+      }
+      if (user.roll == 1) {
+        res.status(200).send({authorization: 'ok'})
+      } else {
+        return res.sendStatus(403);
+      }
+    });
+  } else {
+    res.sendStatus(401);
+  }
+}
 
 exports.verifyTokenAdmin = (req, res, next) => {
   const authHeader = req.headers.authorization;

@@ -2,25 +2,37 @@ const pool = require("../pool");
 const fs = require("fs");
 const formidable = require("formidable");
 
-exports.nuevoArticulo = (req, res) => {
-  art = req.body;
-  var bitmap = fs.readFileSync(art.Foto);
-  var strFoto = new Buffer.from(bitmap).toString("base64");
+exports.nuevoArt = (req, res) => {
   try {
-    pool
-      .query(
-        `insert into Articulo (Ingredientes, Nombre, Disponible, Precio, Foto) values('${art.Ingredientes}', '${art.Nombre}',${art.Disponible}, ${art.Precio}, '${strFoto}');`
-      )
-      .then((response, err) => {
-        if (err) {
-          res.status(500).send({ error: "Ocrrio un error" });
+    let form = new formidable.IncomingForm();
+    form.keepExtensions = true;
+    form.parse(req, (er, fields, files) => {
+      let path = files.Foto.filepath;
+      let strFoto = "";
+      if (files.Foto) {
+        if (files.Foto.size > 10000000) {
+          return res.status(400).json({
+            error: "Image too big",
+          });
         }
-        if (response) {
-          console.log(strFoto);
-          res.json({ posted: true });
-        }
-        res.end();
-      });
+        var bitmap = fs.readFileSync(path);
+        strFoto = new Buffer.from(bitmap).toString("base64");
+      }
+      pool
+        .query(
+          `insert into Articulo (Ingredientes, Nombre, Disponible, Precio, Foto) values('${fields.Ingredientes}', '${fields.Nombre}',${fields.Disponible}, ${fields.Precio}, '${strFoto}');`
+        )
+        .then((response, err) => {
+          if (err) {
+            res.status(500).send({ error: "Ocrrio un error" });
+          }
+          if (response) {
+            // console.log(strFoto);
+            res.json({ posted: true });
+          }
+          res.end();
+        });
+    });
   } catch (e) {
     res.status(500).send({ error: "Ocurrio un error" });
   }
@@ -47,7 +59,7 @@ exports.ArticulosSinFotos = (req, res) => {
 };
 
 exports.FotoArt = (req, res) => {
-  idArt = req.body.idArt;
+  idArt = req.query.idArt;
   try {
     pool
       .query(`select Foto from Articulo where idArt = ${idArt}`)
@@ -56,10 +68,10 @@ exports.FotoArt = (req, res) => {
           res.status(500).send({ error: "Ocurrio un error" });
         }
         if (response) {
-          res.json(response);
-          // res.json({posted:true})
+          const buf = new Buffer.from(response[0].Foto, "base64");
+
+          res.send(buf);
         }
-        res.end();
       });
   } catch (e) {
     res.status(500).send({ error: "Ocurrio un error" });
@@ -85,7 +97,6 @@ exports.cambiarArtSinFoto = (req, res) => {
         Ingredientes = "";
         if (typeof art.Ingredientes !== "undefined") {
           Ingredientes = art.Ingredientes;
-          // console.log(Ingredientes);
         } else {
           Ingredientes = ant.Ingredientes;
         }
@@ -111,8 +122,6 @@ exports.cambiarArtSinFoto = (req, res) => {
           Precio = ant.Precio;
         }
 
-        // console.log(Ingredientes);
-
         try {
           pool
             .query(
@@ -135,29 +144,38 @@ exports.cambiarArtSinFoto = (req, res) => {
   }
 };
 
-
-
 exports.cambiarArtFoto = (req, res) => {
-  art = req.body;
-  var bitmap = fs.readFileSync(art.Foto);
-  var strFoto = new Buffer.from(bitmap).toString("base64");
-
   try {
-    pool
-      .query(`update Articulo set Foto='${strFoto}' where idArt = ${art.idArt};`)
-      .then((response, err) => {
-        if (err) {
-          res.status(500).send({ error: "Ocrrio un error" });
+    let form = new formidable.IncomingForm();
+    form.keepExtensions = true;
+    form.parse(req, (er, fields, files) => {
+      let path;
+      let strFoto;
+      if (files.Foto) {
+        if (files.Foto.size > 10000000) {
+          return res.status({ error: "Img too big" });
         }
-        if (response) {
-          res.json({ posted: true });
-        }
-        res.end();
-      });
+        path = files.Foto.filepath;
+      }
+      console.log(fields);
+      var bitmap = fs.readFileSync(path);
+      strFoto = new Buffer.from(bitmap).toString("base64");
+
+      pool
+        .query(
+          `update Articulo set Foto='${strFoto}' where idArt = ${fields.idArt};`
+        )
+        .then((response, err) => {
+          if (err) {
+            res.status(500).send({ error: "Ocrrio un error" });
+          }
+          if (response) {
+            res.json({ posted: true });
+          }
+          res.end();
+        });
+    });
   } catch (e) {
     res.status(500).send({ error: "Ocurrio un error" });
   }
 };
-// exports.articulos = (req, res) => {
-
-// }
