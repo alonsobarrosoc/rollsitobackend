@@ -5,10 +5,17 @@ const salt_rounds = 10;
 
 exports.nuevoUsuario = (req, res) => {
   let us = req.body;
+  let roll = 'NULL';
+  if (typeof us.roll !== "undefined") {
+    roll = us.roll;
+  }
+
   try {
     bcrypt.hash(us.pass, salt_rounds, function (erro, hash) {
       pool
-        .query(`insert into Usuario values('${us.username}', '${hash}');`)
+        .query(
+          `insert into Usuario values('${us.username}', '${hash}',${roll});`
+        )
         .then((response, err) => {
           if (err) {
             console.log(err);
@@ -23,7 +30,6 @@ exports.nuevoUsuario = (req, res) => {
     });
   } catch (err) {
     res.status(500).send({ error: "Ocurrio un error" });
-    // return res.json(err);
   }
 };
 
@@ -38,15 +44,19 @@ exports.login = (req, res) => {
           res.status(500).send({ error: "Ocurrio un error" });
         }
         if (response) {
-          bcrypt.compare(us.pass, response[0].pass).then(function (result) {
-            if (result) {
-              var token = jwt.sign(response[0], process.env.KEY);
-              console.log(token);
-              res.status(200).json({ token });
-            } else {
-              res.status(403).send({ error: "Prohibido" });
-            }
-          });
+          if (typeof response[0] !== "undefined") {
+            bcrypt.compare(us.pass, response[0].pass).then(function (result) {
+              if (result) {
+                var token = jwt.sign(response[0], process.env.KEY);
+                // console.log(token);
+                res.status(200).json({ token });
+              } else {
+                res.status(403).send({ error: "Prohibido" });
+              }
+            });
+          } else {
+            res.status(403).send({ error: "Prohibido" });
+          }
         }
       });
   } catch (err) {
@@ -69,29 +79,105 @@ exports.cambiarPassword = (req, res) => {
         if (response) {
           bcrypt.compare(us.pass1, response[0].pass).then(function (result) {
             if (result) {
-                bcrypt.hash(us.nuevoPass, salt_rounds, function(e, hash){
-                    pool
-                    .query(
-                        `update Usuario set pass='${hash}' where username = '${us.username}'`
-                        )
-                        .then(function (resp, erro) {
-                            if (erro) {
-                                console.log(erro);
-                                res.status(500).send({ error: "Ocurrio un error" });
-                            }
-                            if (resp) {
-                                res.status(200).json({ posted: true });
-                            }
-                        });
-                })
-                    } else {
-                        res.status(403).json({ error: "Prohibido" });
+              bcrypt.hash(us.nuevoPass, salt_rounds, function (e, hash) {
+                pool
+                  .query(
+                    `update Usuario set pass='${hash}' where username = '${us.username}'`
+                  )
+                  .then(function (resp, erro) {
+                    if (erro) {
+                      console.log(erro);
+                      res.status(500).send({ error: "Ocurrio un error" });
                     }
-                });
-                //   res.end();
+                    if (resp) {
+                      res.status(200).json({ posted: true });
+                    }
+                  });
+              });
+            } else {
+              res.status(403).json({ error: "Prohibido" });
             }
-        });
-    } catch (error) {
+          });
+          //   res.end();
+        }
+      });
+  } catch (error) {
     res.status(500).send({ error: "Ocurrio un error" });
+  }
+};
+
+exports.isAuthenticated = (req, res) => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader) {
+    const token = authHeader.split(" ")[1];
+
+    jwt.verify(token, process.env.KEY, (err, user) => {
+      if (err) {
+        return res.sendStatus(403);
+      }
+        res.status(200).send({authorization: 'ok'})
+      
+    });
+  } else {
+    res.sendStatus(401);
+  }
+}
+exports.isAuthenticatedAdmin = (req, res) => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader) {
+    const token = authHeader.split(" ")[1];
+
+    jwt.verify(token, process.env.KEY, (err, user) => {
+      if (err) {
+        return res.sendStatus(403);
+      }
+      if (user.roll == 1) {
+        res.status(200).send({authorization: 'ok'})
+      } else {
+        return res.sendStatus(403);
+      }
+    });
+  } else {
+    res.sendStatus(401);
+  }
+}
+
+exports.verifyTokenAdmin = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader) {
+    const token = authHeader.split(" ")[1];
+
+    jwt.verify(token, process.env.KEY, (err, user) => {
+      if (err) {
+        return res.sendStatus(403);
+      }
+      if (user.roll == 1) {
+        next();
+      } else {
+        return res.sendStatus(403);
+      }
+    });
+  } else {
+    res.sendStatus(401);
+  }
+};
+
+exports.verifyToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader) {
+    const token = authHeader.split(" ")[1];
+
+    jwt.verify(token, process.env.KEY, (err, user) => {
+      if (err) {
+        return res.sendStatus(403);
+      }
+      next();
+    });
+  } else {
+    res.sendStatus(401);
   }
 };
