@@ -2,7 +2,7 @@ const pool = require("../pool");
 
 exports.nuevoPedido = (req, res) => {
   let p = req.body;
-
+  // DEC: Pedido Declinado
   // ECP: Esperando confirmacin del pedido
   // REP: Restaurante esta preparando
   // RSP: Repartidor salio con el pedido
@@ -76,42 +76,58 @@ exports.cambiarPedido = (req, res) => {
         }
 
         HoraAceptado = "";
-        if (typeof p.HoraAceptado !== "undefined") {
-          HoraAceptado = p.HoraAceptado;
-        } else {
+        if (typeof p.HoraAceptado === "undefined") {
           if (ant.HoraAceptado == null) {
-            HoraAceptado = null;
-          } else {
+            HoraAceptado = "null";
+          }
+          else {
             HoraAceptado = "'" + ant.HoraAceptado + "'";
           }
-        }
-
-        HoraPreparado = "";
-        if (typeof p.HoraPreparado !== "undefined") {
-          HoraPreparado = p.HoraPreparado;
         } else {
+          HoraAceptado = `'${p.HoraAceptado}'`;
+          // HoraAceptado = `'${HoraAceptado}'`;
+        }
+        HoraPreparado = "";
+        if (typeof p.HoraPreparado === "undefined") {
           if (ant.HoraPreparado == null) {
-            HoraPreparado = null;
-          } else {
+            HoraPreparado = "null";
+          }
+          else {
             HoraPreparado = "'" + ant.HoraPreparado + "'";
           }
+        } else {
+          HoraPreparado = `'${p.HoraPreparado}'`;
+          // HoraAceptado = `'${HoraAceptado}'`;
         }
 
         HoraLlegada = "";
-        if (typeof p.HoraLlegada !== "undefined") {
-          HoraLlegada = p.HoraLlegada;
-        } else {
+        if (typeof p.HoraLlegada === "undefined") {
           if (ant.HoraLlegada == null) {
-            HoraLlegada = null;
-          } else {
+            HoraLlegada = "null";
+          }
+          else {
             HoraLlegada = "'" + ant.HoraLlegada + "'";
           }
+        } else {
+          HoraLlegada = `'${p.HoraLlegada}'`;
+          // HoraAceptado = `'${HoraAceptado}'`;
         }
 
+        let NumRepartidor = '';
+        if(typeof p.NumRepartidor === 'undefined)'){
+          if(ant.NumRepartidor = null){
+            NumRepartidor = 'null;'
+          } else {
+            NumRepartidor = `'${ant.NumRepartidor}'`
+          }
+        } else {
+          NumRepartidor = `'${p.NumRepartidor}'`
+        }
+        console.log(p.HoraAceptado)
         try {
           pool
             .query(
-              `update Pedido set Estado = '${Estado}', Total = ${Total}, HoraAceptado = ${HoraAceptado}, HoraPreparado = ${HoraPreparado}, HoraLlegada = ${HoraLlegada} where NumPedido = ${p.NumPedido}`
+              `update Pedido set NumRepartidor = ${NumRepartidor}, Estado = '${Estado}', Total = ${Total}, HoraAceptado = ${HoraAceptado}, HoraPreparado = ${HoraPreparado}, HoraLlegada = ${HoraLlegada} where NumPedido = ${p.NumPedido}`
             )
             .then((response, err) => {
               if (err) {
@@ -142,7 +158,7 @@ exports.pedidoDe = (req, res) => {
           res.status(500).send({ error: "Ocurrio un error" });
         }
         if (response) {
-          res.json(response)
+          res.json(response);
           // res.json({ updated: true });
         }
       });
@@ -160,10 +176,67 @@ exports.pedidosEnCurso = (req, res) => {
           res.status(500).send({ error: "Ocurrio un error" });
         }
         if (response) {
-          res.json(response)
+          res.json(response);
         }
       });
   } catch (error) {
     res.status(500).send({ error: "Ocurrio un error" });
   }
 };
+exports.pedidosEsperando = (req, res) => {
+  try {
+    pool
+      .query(
+        `select * from Pedido p, Cliente c where p.Tel = c.Tel and Estado = "ECP" order by HoraPedido;`
+      )
+      .then((response, err) => {
+        if (err) {
+          res.status(500).send({ error: "Ocurrio un error" });
+        }
+        if (response) {
+          res.json(response);
+        }
+      });
+  } catch (error) {
+    res.status(500).send({ error: "Ocurrio un error" });
+  }
+};
+
+exports.pedidosEnProceso = (req, res) => {
+  try {
+    pool
+      .query(
+        `select * from Pedido p, Cliente c where p.Tel = c.Tel and Estado = "REP" order by HoraAceptado;`
+      )
+      .then((response, err) => {
+        if (err) {
+          res.status(500).send({ error: "Ocurrio un error" });
+        }
+        if (response) {
+          res.json(response);
+        }
+      });
+  } catch (error) {
+    res.status(500).send({ error: "Ocurrio un error" });
+  }
+};
+
+exports.pedidosEnCamino = (req, res) => {
+  try {
+    pool
+      .query(
+        `select * from Pedido p, Cliente c where p.Tel = c.Tel and Estado = "RSP" order by HoraPreparado;`
+      )
+      .then((response, err) => {
+        if (err) {
+          res.status(500).send({ error: "Ocurrio un error" });
+        }
+        if (response) {
+          res.json(response);
+        }
+      });
+  } catch (error) {
+    res.status(500).send({ error: "Ocurrio un error" });
+  }
+};
+

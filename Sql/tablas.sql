@@ -1,57 +1,76 @@
-use rollsito;
-create table Cliente(
-	Tel varchar(200) primary key,
-    Dir varchar(500),
-    Nombre varchar(200)
-);
-create table Articulo(
-	idArt mediumint primary key auto_increment not null,
-    Ingredientes varchar(500),
-    Nombre varchar(200),
-    Disponible boolean,
-    Precio double,
-    Foto mediumblob
-);
-create table Pedido(
-	NumPedido mediumint primary key auto_increment not null,
-    Tel varchar(200),
-    Estado varchar(100),
-    Total double,
-    HoraPedido time,
-    HoraAceptado time,
-    HoraPreparado time,
-    HoraLlegada time,
-    foreign key (Tel) references Cliente(Tel)
-);
+CREATE TABLE `Articulo` (
+  `idArt` mediumint NOT NULL AUTO_INCREMENT,
+  `Ingredientes` varchar(500) DEFAULT NULL,
+  `Nombre` varchar(200) DEFAULT NULL,
+  `Disponible` tinyint(1) DEFAULT NULL,
+  `Precio` double DEFAULT NULL,
+  `Foto` mediumblob,
+  PRIMARY KEY (`idArt`)
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-create table Extra(
-	idE mediumint primary key auto_increment not null,
-	Nombre varchar(200),
-    Drecripcion varchar(500),
-    Precio double
-);
+CREATE TABLE `Cliente` (
+  `Tel` varchar(200) NOT NULL,
+  `Dir` varchar(500) DEFAULT NULL,
+  `Nombre` varchar(200) DEFAULT NULL,
+  PRIMARY KEY (`Tel`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-create table PuedeTenerExtra(
-	idArt mediumint references Articulo(idArt),
-    idE mediumint references Extra(idE),
-    primary key (idArt, idE)
-);
+CREATE TABLE `Extra` (
+  `idE` mediumint NOT NULL AUTO_INCREMENT,
+  `Nombre` varchar(200) DEFAULT NULL,
+  `Descripcion` varchar(500) DEFAULT NULL,
+  `Precio` double DEFAULT NULL,
+  PRIMARY KEY (`idE`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-create table PidioExtra(
-	idPE mediumint primary key auto_increment not null,
-    Cant int,
-    idE mediumint references Extra(idE),
-    idPidio mediumint references Pidio(idPidio)
-);
-create table Pidio(
-	idPidio mediumint primary key auto_increment not null,
-	idArt mediumint references Articulo(idArt),
-    NumPedido mediumint references Pedido(NumPedido)
-);
-create table Usuario(
-	username varchar(500) primary key,
-    pass varchar(500),
-    roll VARCHAR(45)
-);
+CREATE TABLE `Pedido` (
+  `NumPedido` mediumint NOT NULL AUTO_INCREMENT,
+  `Tel` varchar(200) DEFAULT NULL,
+  `Estado` varchar(100) DEFAULT NULL,
+  `Total` double DEFAULT NULL,
+  `HoraPedido` time DEFAULT NULL,
+  `HoraAceptado` time DEFAULT NULL,
+  `HoraPreparado` time DEFAULT NULL,
+  `HoraLlegada` time DEFAULT NULL,
+  PRIMARY KEY (`NumPedido`),
+  KEY `Tel` (`Tel`),
+  CONSTRAINT `Pedido_ibfk_1` FOREIGN KEY (`Tel`) REFERENCES `Cliente` (`Tel`)
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+CREATE TABLE `Pidio` (
+  `idPidio` mediumint NOT NULL AUTO_INCREMENT,
+  `idArt` mediumint DEFAULT NULL,
+  `idPE` mediumint DEFAULT NULL,
+  `NumPedido` mediumint DEFAULT NULL,
+  PRIMARY KEY (`idPidio`),
+  KEY `idArt_idx` (`idArt`),
+  KEY `idPE_idx` (`idPE`),
+  KEY `NumPedido_idx` (`NumPedido`),
+  CONSTRAINT `idArt` FOREIGN KEY (`idArt`) REFERENCES `Articulo` (`idArt`),
+  CONSTRAINT `idPE` FOREIGN KEY (`idPE`) REFERENCES `PidioExtra` (`idPE`),
+  CONSTRAINT `NumPedido` FOREIGN KEY (`NumPedido`) REFERENCES `Pedido` (`NumPedido`)
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+CREATE TABLE `PidioExtra` (
+  `idPE` mediumint NOT NULL AUTO_INCREMENT,
+  `Cant` int DEFAULT NULL,
+  `idE` mediumint DEFAULT NULL,
+  PRIMARY KEY (`idPE`),
+  CONSTRAINT `idE` FOREIGN KEY (`idPE`) REFERENCES `Extra` (`idE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `PuedeTenerExtra` (
+  `idArt` mediumint NOT NULL,
+  `idE` mediumint NOT NULL,
+  PRIMARY KEY (`idArt`,`idE`),
+  KEY `idE` (`idE`),
+  CONSTRAINT `PuedeTenerExtra_ibfk_1` FOREIGN KEY (`idArt`) REFERENCES `Articulo` (`idArt`),
+  CONSTRAINT `PuedeTenerExtra_ibfk_2` FOREIGN KEY (`idE`) REFERENCES `Extra` (`idE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `Usuario` (
+  `username` varchar(500) NOT NULL,
+  `pass` varchar(500) DEFAULT NULL,
+  `roll` varchar(45) DEFAULT NULL,
+  PRIMARY KEY (`username`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
