@@ -31,6 +31,8 @@ app.use("/api/pedido", require("./Routes/pedido"));
 app.use("/api/pidio", require("./Routes/pidio"));
 app.use('/api/extra', require('./Routes/extra'))
 app.use('/api/pte', require('./Routes/puedeTenerExtra'))
+app.use('/api/pe', require('./Routes/pidioExtra'))
+
 
 // port
 const port = process.env.PORT;

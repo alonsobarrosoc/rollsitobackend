@@ -6,7 +6,7 @@ exports.nuevoPidio = (req, res) => {
     pool
       .query(
         //   FALTAN LOS VALORES
-        `insert into Pidio values('${p.idArt}', '${p.NumPedido}', '${p.Cant}');`
+        `insert into Pidio(idArt, NumPedido) values('${p.idArt}', ${p.NumPedido});`
       )
       .then((response, err) => {
         if (err) {
@@ -15,16 +15,86 @@ exports.nuevoPidio = (req, res) => {
         }
 
         if (response) {
-          res.json({ posted: true });
+          pool;
+          // .query(`update Pedido set idPidio=${response.insertId}`)
+          // .then((response, err) => {
+          if (err) {
+            console.log(err);
+            res.status(500).send({ error: "Ocurrio un error" });
+          }
+          if (response) {
+            res.json({ posted: true });
+          }
+          // });
+          // res.end();
         }
-        res.end();
       });
   } catch (error) {
     res.status(500).send({ error: "Ocurrio un error" });
   }
 };
 
-// FALTA
+exports.orden = (req, res) => {
+  // p = req.body
+  NumPedido = req.query.NumPedido;
+  try {
+    pool
+      .query(
+        // `select a.Precio, pidio.idPidio, a.idArt, idPE, pedido.NumPedido, pedido.Tel, Estado, HoraPedido, a.Nombre from Pidio pidio, Pedido pedido, Articulo a where pidio.NumPedido = pedido.NumPedido and a.idArt = pidio.idArt and pidio.NumPedido = ${NumPedido} and Estado = "ECP";`
+        `select count(pie.idPE) as Cant, pi.idArt, a.Nombre as NombreA, a.Precio as PrecioP, pie.idPE, e.Nombre as NombreE, e.Precio as PrecioE, ((a.Precio +e.Precio ) * count(pie.idPE)) as Total
+from Articulo a, Pedido pe, Pidio pi, PidioExtra pie, Extra e
+where pe.NumPedido = pi.NumPedido and
+pi.idArt = a.idArt and 
+(pi.idPE IS NULL or pi.idPE = pie.idPE) and
+e.idE = pie.idE and
+pe.NumPedido = ${NumPedido} and 
+pe.Estado = "ECP"
+group by pie.idPE, pi.idArt
+;`
+      )
+      .then((response, err) => {
+        if (err) {
+          console.log(err);
+        }
+        if (response) {
+          res.json(response);
+        }
+      });
+  } catch (error) {
+    res.status(500).send({ error: "Ocurrio un error" });
+  }
+};
+
+exports.ordenEnProceso = (req, res) => {
+  NumPedido = req.query.NumPedido;
+  try {
+    pool
+      .query(
+        // `select a.Precio, pidio.idPidio, a.idArt, idPE, pedido.NumPedido, pedido.Tel, Estado, HoraPedido, a.Nombre from Pidio pidio, Pedido pedido, Articulo a where pidio.NumPedido = pedido.NumPedido and a.idArt = pidio.idArt and pidio.NumPedido = ${NumPedido} and Estado = "ECP";`
+        `select count(pie.idPE) as Cant, pi.idArt, a.Nombre as NombreA, a.Precio as PrecioP, pie.idPE, e.Nombre as NombreE, e.Precio as PrecioE, ((a.Precio +e.Precio ) * count(pie.idPE)) as Total
+from Articulo a, Pedido pe, Pidio pi, PidioExtra pie, Extra e
+where pe.NumPedido = pi.NumPedido and
+pi.idArt = a.idArt and 
+(pi.idPE IS NULL or pi.idPE = pie.idPE) and
+e.idE = pie.idE and
+pe.NumPedido = ${NumPedido} and 
+pe.Estado = "REP"
+group by pie.idPE, pi.idArt
+;`
+      )
+      .then((response, err) => {
+        if (err) {
+          console.log(err);
+        }
+        if (response) {
+          res.json(response);
+        }
+      });
+  } catch (error) {
+    res.status(500).send({ error: "Ocurrio un error" });
+  }
+};
+
 
 exports.cambiarPidio = (req, res) => {
   let p = req.body;
