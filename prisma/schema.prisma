@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Articulo {
+  idArt           Int               @id @default(autoincrement()) @db.MediumInt
+  Ingredientes    String?           @db.VarChar(500)
+  Nombre          String?           @db.VarChar(200)
+  Disponible      Boolean?
+  Recomendacion   Boolean?
+  Precio          Float?
+  Foto            Bytes?            @db.MediumBlob
+  Pidio           Pidio[]
+  PuedeTenerExtra PuedeTenerExtra[]
+}
+
+model Cliente {
+  Tel    String   @id @db.VarChar(200)
+  Dir    String?  @db.VarChar(500)
+  Nombre String?  @db.VarChar(200)
+  Pedido Pedido[]
+}
+
+model Extra {
+  idE             Int               @id @default(autoincrement()) @db.MediumInt
+  Nombre          String?           @db.VarChar(200)
+  Descripcion     String?           @db.VarChar(500)
+  Precio          Float?
+  General         Boolean           @default(false)
+  PidioExtra      PidioExtra[]
+  PuedeTenerExtra PuedeTenerExtra[]
+}
+
+model Pedido {
+  NumPedido     Int         @id @default(autoincrement()) @db.MediumInt
+  Tel           String?     @db.VarChar(200)
+  Estado        String?     @db.VarChar(100)
+  Total         Float?
+  HoraPedido    DateTime?
+  HoraAceptado  DateTime?   @db.Time(0)
+  HoraPreparado DateTime?   @db.Time(0)
+  HoraLlegada   DateTime?   @db.Time(0)
+  NumRepartidor String?     @db.VarChar(200)
+  Repartidor    Repartidor? @relation(fields: [NumRepartidor], references: [Tel])
+  Cliente       Cliente?    @relation(fields: [Tel], references: [Tel], onDelete: NoAction, onUpdate: NoAction, map: "Pedido_ibfk_1")
+  Pidio         Pidio[]
+
+  @@index([Tel], map: "Tel")
+  @@index([NumRepartidor], map: "Pedido_NumRepartidor_fkey")
+}
+
+model Pidio {
+  idPidio    Int         @id @default(autoincrement()) @db.MediumInt
+  idArt      Int?        @db.MediumInt
+  idPE       Int?        @db.MediumInt
+  NumPedido  Int?        @db.MediumInt
+  Pedido     Pedido?     @relation(fields: [NumPedido], references: [NumPedido], onDelete: NoAction, onUpdate: NoAction, map: "NumPedido")
+  Articulo   Articulo?   @relation(fields: [idArt], references: [idArt], onDelete: NoAction, onUpdate: NoAction, map: "idArt")
+  PidioExtra PidioExtra? @relation(fields: [idPE], references: [idPE], onDelete: NoAction, onUpdate: NoAction, map: "idPE")
+
+  @@index([NumPedido], map: "NumPedido_idx")
+  @@index([idArt], map: "idArt_idx")
+  @@index([idPE], map: "idPE_idx")
+}
+
+model PidioExtra {
+  idPE  Int     @id @default(autoincrement()) @db.MediumInt
+  Cant  Int?
+  idE   Int?    @db.MediumInt
+  Extra Extra?  @relation(fields: [idE], references: [idE], map: "idE")
+  Pidio Pidio[]
+
+  @@index([idE], map: "idE")
+}
+
+model PuedeTenerExtra {
+  idArt    Int      @db.MediumInt
+  idE      Int      @db.MediumInt
+  Articulo Articulo @relation(fields: [idArt], references: [idArt], onDelete: NoAction, onUpdate: NoAction, map: "PuedeTenerExtra_ibfk_1")
+  Extra    Extra    @relation(fields: [idE], references: [idE], onDelete: NoAction, onUpdate: NoAction, map: "PuedeTenerExtra_ibfk_2")
+
+  @@id([idArt, idE])
+  @@index([idE], map: "idE")
+}
+
+model Usuario {
+  username String  @id @db.VarChar(500)
+  pass     String? @db.VarChar(500)
+  roll     String? @db.VarChar(45)
+}
+
+model Repartidor {
+  Tel    String   @id @db.VarChar(200)
+  Nombre String?  @db.VarChar(200)
+  Pedido Pedido[]
+}

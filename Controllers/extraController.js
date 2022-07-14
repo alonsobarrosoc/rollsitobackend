@@ -1,65 +1,58 @@
-const pool = require("../pool");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
-exports.extras = (req, res) => {
-    idArt = req.query.idArt
-  try {
-    pool.query(`select * from Extra`).then((resp, err) => {
-      if (err) {
-        res.status(500).send({ error: "Ocrrio un error" });
-      }
-      if (resp) {
-        // console.log(strFoto);
-        res.json(resp);
-      }
-      res.end();
-    });
-  } catch (e) {
-    console.log(e);
-    res.status(500).send({ error: "Ocurrio un error" });
-  }
+exports.extras = async (req, res) => {
+  const extras = await prisma.extra.findMany();
+  res.json(extras);
 };
-exports.addExtra = (req, res) => {
+exports.addExtra = async (req, res) => {
   let ex = req.body;
-  try {
-    pool
-      .query(
-        `insert into Extra(Nombre, Descripcion, Precio) values('${ex.Nombre}', '${ex.Descripcion}', ${ex.Precio})`
-      )
-      .then((resp, err) => {
-        if (err) {
-          res.status(500).send({ error: "Ocrrio un error" });
-        }
-        if (resp) {
-          // console.log(strFoto);
-          res.json({ posted: true });
-        }
-        res.end();
-      });
-  } catch (e) {
-    console.log(e);
-    res.status(500).send({ error: "Ocurrio un error" });
+  let gen;
+  if(ex.General ==undefined || ex.General == ''){
+    gen = null
   }
+  await prisma.Extra.create({
+    data: {
+      Nombre: ex.Nombre,
+      Descripcion: ex.Descripcion,
+      Precio: Number(ex.Precio),
+      General: Boolean(gen)
+    },
+  });
+  res.json("created");
 };
 
-exports.extrasSinAsignarParaArt = (req,res) => {
+exports.extrasSinAsignarParaArt = async (req, res) => {
   let idArt = req.query.idArt;
-  try {
-    pool
-      .query(
-        `select * from Extra e where idE not in(select idE from PuedeTenerExtra where idArt = ${idArt});`
-      )
-      .then((resp, err) => {
-        if (err) {
-          res.status(500).send({ error: "Ocrrio un error" });
-        }
-        if (resp) {
-          // console.log(strFoto);
-          res.json(resp);
-        }
-        res.end();
-      });
-  } catch (e) {
-    console.log(e);
-    res.status(500).send({ error: "Ocurrio un error" });
-  }
+
+  const vinculados = await prisma.PuedeTenerExtra.findMany({
+    select: { idE: true },
+    where: {
+      idArt: Number(idArt),
+    },
+  });
+  let v = [];
+  vinculados.forEach((element) => {
+    v.push(element.idE);
+  });
+  const extras = await prisma.Extra.findMany({
+    where: {
+      idE: {
+        notIn: v,
+      },
+    },
+  });
+  res.json(extras);
 };
+
+
+exports.extrasGenerales = async(req, res) => {
+  let extras = prisma.Extra.findMany({
+    where:{
+      General: true
+    }
+  })
+  res.json(extras)
+}
+
+
