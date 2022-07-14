@@ -1,158 +1,89 @@
-const pool = require("../pool");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
-exports.nuevoPidio = (req, res) => {
+exports.nuevoPidio = async (req, res) => {
   let p = req.body;
-  try {
-    pool
-      .query(
-        //   FALTAN LOS VALORES
-        `insert into Pidio(idArt, NumPedido) values('${p.idArt}', ${p.NumPedido});`
-      )
-      .then((response, err) => {
-        if (err) {
-          console.log(err);
-          res.status(500).send({ error: "Ocurrio un error" });
-        }
-
-        if (response) {
-          pool;
-          // .query(`update Pedido set idPidio=${response.insertId}`)
-          // .then((response, err) => {
-          if (err) {
-            console.log(err);
-            res.status(500).send({ error: "Ocurrio un error" });
-          }
-          if (response) {
-            res.json({ posted: true });
-          }
-          // });
-          // res.end();
-        }
-      });
-  } catch (error) {
-    res.status(500).send({ error: "Ocurrio un error" });
+  if (p.idPE === null) {
+    p["idPE"] = null;
+  } else {
+    p["NumPedido"] = Number(p.NumPedido);
+    p["idArt"] = Number(p.idArt);
   }
+  const pidio = await prisma.Pidio.create({
+    // data:p
+    data: {
+      idArt: Number(p.idArt),
+      NumPedido: Number(p.NumPedido),
+      idPE: p.idPE,
+    },
+  });
+  res.json(pidio);
 };
 
-exports.orden = (req, res) => {
+exports.orden = async (req, res) => {
   // p = req.body
   NumPedido = req.query.NumPedido;
-  try {
-    pool
-      .query(
-        // `select a.Precio, pidio.idPidio, a.idArt, idPE, pedido.NumPedido, pedido.Tel, Estado, HoraPedido, a.Nombre from Pidio pidio, Pedido pedido, Articulo a where pidio.NumPedido = pedido.NumPedido and a.idArt = pidio.idArt and pidio.NumPedido = ${NumPedido} and Estado = "ECP";`
-        `select count(pie.idPE) as Cant, pi.idArt, a.Nombre as NombreA, a.Precio as PrecioP, pie.idPE, e.Nombre as NombreE, e.Precio as PrecioE, ((a.Precio +e.Precio ) * count(pie.idPE)) as Total
-from Articulo a, Pedido pe, Pidio pi, PidioExtra pie, Extra e
-where pe.NumPedido = pi.NumPedido and
-pi.idArt = a.idArt and 
-(pi.idPE IS NULL or pi.idPE = pie.idPE) and
-e.idE = pie.idE and
-pe.NumPedido = ${NumPedido} and 
-pe.Estado = "ECP"
-group by pie.idPE, pi.idArt
-;`
-      )
-      .then((response, err) => {
-        if (err) {
-          console.log(err);
-        }
-        if (response) {
-          res.json(response);
-        }
-      });
-  } catch (error) {
-    res.status(500).send({ error: "Ocurrio un error" });
+
+  const x = await prisma.$queryRaw`(
+select count(*) as Cant, e.idE, a.idArt, e.Nombre as NombreExtra, a.Nombre as NombreArticulo, e.Precio as EPrecio, a.Precio as APrecio from Pidio p, Articulo a, Extra e, PidioExtra pe
+where p.idArt = a.idArt and p.idPE = pe.idPE and pe.idE = e.idE and p.NumPedido = ${NumPedido}
+group by pe.idE, a.idArt
+)
+union
+(
+select count(*) as Cant, null as idE, a.idArt, null as NombreExtra, a.Nombre as NombreArticulo, null as EPrecio, a.Precio as APrecio from Pidio p, Articulo a
+where p.idArt = a.idArt and p.idPE is null and p.NumPedido = ${NumPedido}
+group by a.idArt
+);
+`;
+
+  x.forEach((element) => {
+    element["Cant"] = Number(element.Cant.toString());
+  });
+  res.json(x);
+};
+
+exports.borrarPidio = async (req, res) => {
+  let NumPedido = req.query.NumPedido;
+  let idArt = req.query.idArt;
+  let idE = req.query.idE;
+  if (typeof idE === "undefined") {
+    idE = null;
+  }
+  let p = [];
+  if (idE !== "null") {
+    p = await prisma.Pidio.findMany({
+      where: {
+        idArt: Number(idArt),
+        NumPedido: Number(NumPedido),
+        PidioExtra: {
+          Extra: {
+            idE: Number(idE),
+          },
+        },
+      },
+    });
+  } else {
+    p = await prisma.Pidio.findMany({
+      where: {
+        idArt: Number(idArt),
+        NumPedido: Number(NumPedido),
+        idPE: null,
+      },
+    });
+  }
+  if (p.length == 0) {
+    res.json("Error");
+  } else {
+    await prisma.Pidio.delete({
+      where: {
+        idPidio: Number(p[0].idPidio),
+      },
+    });
+    res.json("deleted");
   }
 };
 
-exports.ordenEnProceso = (req, res) => {
-  NumPedido = req.query.NumPedido;
-  try {
-    pool
-      .query(
-        // `select a.Precio, pidio.idPidio, a.idArt, idPE, pedido.NumPedido, pedido.Tel, Estado, HoraPedido, a.Nombre from Pidio pidio, Pedido pedido, Articulo a where pidio.NumPedido = pedido.NumPedido and a.idArt = pidio.idArt and pidio.NumPedido = ${NumPedido} and Estado = "ECP";`
-        `select count(pie.idPE) as Cant, pi.idArt, a.Nombre as NombreA, a.Precio as PrecioP, pie.idPE, e.Nombre as NombreE, e.Precio as PrecioE, ((a.Precio +e.Precio ) * count(pie.idPE)) as Total
-from Articulo a, Pedido pe, Pidio pi, PidioExtra pie, Extra e
-where pe.NumPedido = pi.NumPedido and
-pi.idArt = a.idArt and 
-(pi.idPE IS NULL or pi.idPE = pie.idPE) and
-e.idE = pie.idE and
-pe.NumPedido = ${NumPedido} and 
-pe.Estado = "REP"
-group by pie.idPE, pi.idArt
-;`
-      )
-      .then((response, err) => {
-        if (err) {
-          console.log(err);
-        }
-        if (response) {
-          res.json(response);
-        }
-      });
-  } catch (error) {
-    res.status(500).send({ error: "Ocurrio un error" });
-  }
-};
+// exports.deletePidio = async(req, res) => {
 
-
-exports.cambiarPidio = (req, res) => {
-  let p = req.body;
-  let pedido = {};
-  let pidio = {};
-
-  try {
-    pool
-      .query(`select * from Pedido where Estado != "RLD" and Tel = "${p.Tel}"`)
-      .then((response, err) => {
-        if (err) {
-          console.log(err);
-        }
-        if (response) {
-          pedido = response[0];
-        }
-
-        try {
-          pool
-            .query(`select * from Pidio where NumPedido = ${pedido.NumPedido}`)
-            .then((resp, er) => {
-              if (er) {
-                res.status(500).send({ error: "Ocurrio un error" });
-              }
-              if (resp) {
-                pidio = resp[0];
-              }
-
-              console.log(pidio);
-              console.log();
-              Cant = "";
-              if (typeof p.Cant !== "undefined") {
-                Cant = p.Cant;
-              } else {
-                Cant = pidio.Cant;
-              }
-              try {
-                pool
-                  .query(
-                    `update Pidio set Cant = '${Cant}' where NumPedido = '${pedido.NumPedido}'`
-                  )
-                  .then((response, err) => {
-                    if (err) {
-                      res.status(500).send({ error: "Ocurrio un error" });
-                    }
-                    if (response) {
-                      res.json({ updated: true });
-                    }
-                  });
-              } catch (e) {
-                res.status(500).send({ error: "Ocurrio un error" });
-              }
-            });
-        } catch (e) {
-          res.status(500).send({ error: "Ocurrio un error" });
-        }
-      });
-  } catch (e) {
-    res.status(500).send({ error: "Ocurrio un error" });
-  }
-};
+// }

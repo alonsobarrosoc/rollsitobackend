@@ -1,8 +1,10 @@
 const pool = require("../pool");
 const fs = require("fs");
 const formidable = require("formidable");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
-exports.nuevoArt = (req, res) => {
+exports.nuevoArt = async (req, res) => {
   try {
     let form = new formidable.IncomingForm();
     form.keepExtensions = true;
@@ -16,66 +18,73 @@ exports.nuevoArt = (req, res) => {
           });
         }
         var bitmap = fs.readFileSync(path);
-        strFoto = new Buffer.from(bitmap).toString("base64");
+        strFoto = new Buffer.from(bitmap);
       }
-      pool
-        .query(
-          `insert into Articulo (Ingredientes, Nombre, Disponible, Precio, Foto) values('${fields.Ingredientes}', '${fields.Nombre}',${fields.Disponible}, ${fields.Precio}, '${strFoto}');`
-        )
-        .then((response, err) => {
-          if (err) {
-            res.status(500).send({ error: "Ocrrio un error" });
-          }
-          if (response) {
-            // console.log(strFoto);
-            res.json({ posted: true });
-          }
-          res.end();
-        });
+      prisma.Articulo.create({
+        data: {
+          Nombre: fields.Nombre,
+          Ingredientes: fields.Ingredientes,
+          Disponible: true,
+          Precio: Number(fields.Precio),
+          Foto: strFoto,
+          Recomendacion: Boolean(fields.Recomendacion)
+        },
+      }).then((resp) => {
+        res.json("created");
+      });
+      // res.json("created");
+
+      // console.log(datos);
     });
   } catch (e) {
     res.status(500).send({ error: "Ocurrio un error" });
   }
+  // res.json('created')
 };
 
-exports.ArticulosSinFotos = (req, res) => {
-  try {
-    pool
-      .query(
-        `select idArt, Ingredientes, Nombre, Disponible, Precio from Articulo;`
-      )
-      .then((response, err) => {
-        if (err) {
-          res.status(500).send({ error: "Ocurrio un error" });
-        }
-        if (response) {
-          res.json(response);
-        }
-        res.end();
-      });
-  } catch (e) {
-    res.status(500).send({ error: "Ocurrio un error" });
-  }
+exports.artsDisponibles = async (req, res) => {
+  const arts = await prisma.articulo.findMany({
+    where: {
+      Disponible: true,
+    },
+    select: {
+      idArt: true,
+      Ingredientes: true,
+      Nombre: true,
+      Precio: true,
+    },
+  });
+  res.json(arts);
 };
 
-exports.FotoArt = (req, res) => {
+exports.ArticulosSinFotos = async (req, res) => {
+  const arts = await prisma.articulo.findMany({
+    select: {
+      idArt: true,
+      Ingredientes: true,
+      Nombre: true,
+      Disponible: true,
+      Precio: true,
+    },
+  });
+  res.json(arts);
+};
+
+exports.FotoArt = async (req, res) => {
   idArt = req.query.idArt;
-  try {
-    pool
-      .query(`select Foto from Articulo where idArt = ${idArt}`)
-      .then((response, err) => {
-        if (err) {
-          res.status(500).send({ error: "Ocurrio un error" });
-        }
-        if (response) {
-          const buf = new Buffer.from(response[0].Foto, "base64");
-
-          res.send(buf);
-        }
-      });
-  } catch (e) {
-    res.status(500).send({ error: "Ocurrio un error" });
-  }
+  let respFoto = await prisma.Articulo.findMany({
+    where: {
+      idArt: Number(idArt),
+    },
+    select: {
+      Foto: true,
+    },
+  });
+  res.writeHead(200, {
+    "Content-Type": "image/png",
+    "Content-Length": respFoto[0].Foto.length,
+  });
+  res.end(respFoto[0].Foto);
 };
 
 exports.cambiarArtSinFoto = (req, res) => {
@@ -179,3 +188,20 @@ exports.cambiarArtFoto = (req, res) => {
     res.status(500).send({ error: "Ocurrio un error" });
   }
 };
+
+exports.artsRelacionados = async (req, res) => {
+  let arts = await prisma.Articulo.findMany({
+    where: {
+      Recomendacion: true,
+      Disponible: true
+    },
+    select:{
+      idArt:true,
+      Ingredientes: true,
+      Precio: true,
+      Nombre: true
+
+    }
+  })
+  res.json(arts)
+}

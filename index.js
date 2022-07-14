@@ -2,11 +2,12 @@ const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const {PrismaClient} = require('@prisma/client')
 // const formidable = require('formidable-express')
 
 const app = express();
 require("dotenv").config();
-
+const prisma = new PrismaClient()
 // middlewares
 app.use(morgan("dev"));
 // app.use(bodyParser.urlencoded({ extended: true }));
@@ -32,6 +33,7 @@ app.use("/api/pidio", require("./Routes/pidio"));
 app.use('/api/extra', require('./Routes/extra'))
 app.use('/api/pte', require('./Routes/puedeTenerExtra'))
 app.use('/api/pe', require('./Routes/pidioExtra'))
+app.use('/api/repartidor', require('./Routes/repartidor'))
 
 
 // port

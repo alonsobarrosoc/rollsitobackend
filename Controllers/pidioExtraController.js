@@ -1,27 +1,14 @@
 const pool = require("../pool");
+const { PrismaClient} = require('@prisma/client')
+const prisma = new PrismaClient();
 
-exports.addPidioExtra = (req, res) => {
+exports.addPidioExtra = async(req, res) => {
   pe = req.body;
-  try {
-    pool
-      .query(
-        `insert into PidioExtra(Cant, idE) values(${pe.Cant},${pe.idE});`
-      )
-      .then((response, err) => {
-        if (err) {
-          console.log(err);
-        }
-        if (response) {
-            console.log(response.insertId);
-
-            // pool.query(`update from PidioExtra set idPE=${response.}`)
-
-
-
-          res.json(response);
-        }
-      });
-  } catch (error) {
-    res.status(500).send({ error: "Ocurrio un error" });
-  }
+  const result = await prisma.PidioExtra.create({
+    data:{
+      Cant: Number(pe.Cant),
+      idE: Number(pe.idE)
+    }
+  })
+  res.json(result)
 };

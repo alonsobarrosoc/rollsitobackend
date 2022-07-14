@@ -1,0 +1,5 @@
+-- DropForeignKey
+ALTER TABLE `PidioExtra` DROP FOREIGN KEY `idE`;
+
+-- AddForeignKey
+ALTER TABLE `PidioExtra` ADD CONSTRAINT `idE` FOREIGN KEY (`idE`) REFERENCES `Extra`(`idE`) ON DELETE SET NULL ON UPDATE CASCADE;
