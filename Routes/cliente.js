@@ -7,5 +7,4 @@ router.post('/cambiar-cli', cambiarCliente) //(X)
 
 router.get('/cliente', cliente) //(X)
 
-
 module.exports = router;
